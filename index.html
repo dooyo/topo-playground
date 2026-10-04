@@ -60,6 +60,7 @@ code{font-family:var(--font-mono);font-size:12px;font-weight:500;padding:1px 6px
 .btn:active{transform:translateY(1px)}
 .btn-primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:700;box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 28%,transparent)}
 .btn-primary:hover{border-color:transparent;background:color-mix(in srgb,var(--accent) 86%,var(--fg))}
+.btn-primary.cta-joined{background:transparent;color:var(--accent);border-color:var(--accent-line);box-shadow:none;cursor:default}
 .btn-ghost{background:transparent;border-color:transparent;color:var(--fg-2);font-weight:500}
 .btn-ghost:hover{color:var(--fg);border-color:var(--line-2)}
 .btn-lg{height:46px;padding:0 20px;font-size:15px}
@@ -2098,6 +2099,7 @@ function renderEnd() {
     </ul>
     <a class="btn btn-primary btn-lg" data-cta href="${esc(WAITLIST_URL || '#')}" target="_blank" rel="noopener">Join the waitlist</a>
     <p class="fine">This playground runs on sample data for made-up companies.</p>`;
+  markJoined();
 }
 async function playEnd(run) {
   fitAll(800);
@@ -2260,6 +2262,14 @@ function toast(msg) {
   clearTimeout(toastT);
   toastT = setTimeout(() => t.classList.remove('on'), 3600);
 }
+/* Visitors who came back from the form are already on the waitlist: remember it and say so on the buttons. */
+let JOINED = false;
+try {
+  if (new URLSearchParams(location.search).get('joined')) { JOINED = true; store('topo.joined', '1'); }
+  else JOINED = load('topo.joined') === '1';
+} catch (err) { /* no query string here */ }
+const JOINED_LABEL = "You're on the waitlist";
+function markJoined() { if (JOINED) document.querySelectorAll('[data-cta]').forEach(a => { a.textContent = JOINED_LABEL; a.classList.add('cta-joined'); }); }
 /* The waitlist link carries where the visitor came from and what they were looking at (Tally hidden fields). */
 function waitlistHref() {
   try {
@@ -2274,6 +2284,7 @@ function waitlistHref() {
 document.addEventListener('click', e => {
   const a = e.target.closest('[data-cta]');
   if (!a) return;
+  if (JOINED) { e.preventDefault(); toast("You're already on the waitlist. We'll be in touch."); return; }
   if (!WAITLIST_URL) { e.preventDefault(); toast('Placeholder link. Set WAITLIST_URL in the page to your form address.'); return; }
   a.href = waitlistHref();
 });
@@ -2403,7 +2414,8 @@ function boot() {
   renderFrame(first);
   RENDER[first]({});
   requestAnimationFrame(frame);
-  try { if (new URLSearchParams(location.search).get('joined')) setTimeout(() => toast("You're on the waitlist. We'll be in touch."), 900); } catch (err) { /* no query string here */ }
+  markJoined();
+  try { if (new URLSearchParams(location.search).get('joined')) setTimeout(() => toast("Welcome. You're on the waitlist, so have a look around."), 900); } catch (err) { /* no query string here */ }
   intro($('#sweep')).then(() => { if (!S.started) goScenario(first); });
 }
 boot();
