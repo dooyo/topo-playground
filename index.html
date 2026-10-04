@@ -2260,9 +2260,22 @@ function toast(msg) {
   clearTimeout(toastT);
   toastT = setTimeout(() => t.classList.remove('on'), 3600);
 }
+/* The waitlist link carries where the visitor came from and what they were looking at (Tally hidden fields). */
+function waitlistHref() {
+  try {
+    const u = new URL(WAITLIST_URL);
+    const q = new URLSearchParams(location.search);
+    ['ref', 'utm_source', 'utm_medium', 'utm_campaign'].forEach(k => { const v = q.get(k); if (v) u.searchParams.set(k, v); });
+    if (CO) u.searchParams.set('company', CO.id);
+    if (S.scenario) u.searchParams.set('scenario', S.scenario);
+    return u.toString();
+  } catch (err) { return WAITLIST_URL; }
+}
 document.addEventListener('click', e => {
   const a = e.target.closest('[data-cta]');
-  if (a && !WAITLIST_URL) { e.preventDefault(); toast('Placeholder link. Set WAITLIST_URL in the page to your form address.'); }
+  if (!a) return;
+  if (!WAITLIST_URL) { e.preventDefault(); toast('Placeholder link. Set WAITLIST_URL in the page to your form address.'); return; }
+  a.href = waitlistHref();
 });
 if (WAITLIST_URL) document.querySelectorAll('[data-cta]').forEach(a => { a.href = WAITLIST_URL; });
 
